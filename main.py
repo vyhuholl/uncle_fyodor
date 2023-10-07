@@ -113,24 +113,47 @@ async def image_handler(message: Message, state: FSMContext) -> None:
     await state.set_state(Form.language)
     await message.reply(messages.LANGUAGE_MSG)
     data = await state.get_data()
-    language = data["language"] if data["language"] else "English"
 
-    try:
-        create_meme(input_path, output_path, language, data["theme"])
-    except Exception as exc:
-        logger.error(f"{exc} happened during meme creation.")
-        await message.answer(messages.ERROR_MSG)
-        await bot.send_photo(message.chat.id, ERROR_IMAGE)
-    else:
-        await bot.send_photo(message.chat.id, str(output_path))
-    finally:
-        input_path.unlink(missing_ok=True)
-        await state.clear()
+    if "language" in data and "theme" in data:
+        try:
+            create_meme(
+                input_path, output_path, data["language"], data["theme"]
+            )
+        except Exception as exc:
+            logger.error(f"{exc} happened during meme creation.")
+            await message.answer(messages.ERROR_MSG)
+            await bot.send_photo(message.chat.id, ERROR_IMAGE)
+        else:
+            await bot.send_photo(message.chat.id, str(output_path))
+        finally:
+            input_path.unlink(missing_ok=True)
+            await state.clear()
+
+
+# pylint: disable=unused-argument
+async def on_startup(dispatcher: Dispatcher) -> None:
+    """
+    Log bot starting message.
+
+    Args:
+        dispatcher: aiogram dispatcher
+    """
+    logger.info("Bot started")
+
+
+async def on_shutdown(dispatcher: Dispatcher) -> None:
+    """
+    Log bot stopping message.
+
+    Args:
+        dispatcher: aiogram dispatcher
+    """
+    logger.info("Bot stopped")
 
 
 async def main() -> None:
     """Run bot."""
-    await dp.start_polling(bot)
+    await dp.start_polling(bot, on_startup=on_startup, on_shutdown=on_shutdown)
 
 
 if __name__ == "__main__":

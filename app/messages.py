@@ -11,11 +11,11 @@ LANGUAGE_MSG = """What language should I make a meme in?
 (Команда /cancel отменяет создание мема.)"""
 
 THEME_MSG = """What it should be about?
-(You can leave this field empty if you want.
+(You can leave this field empty if you want – in that case, write "-".
 To cancel meme creation, use the /cancel command.)
 
 О чём должен быть мем?
-(Это поле можно оставить пустым.
+(Это поле можно оставить пустым – в таком случае, введите "-".
 Команда /cancel отменяет создание мема.)"""
 
 CANCEL_MSG = """Meme creation cancelled.

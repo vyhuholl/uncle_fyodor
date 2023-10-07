@@ -1,7 +1,6 @@
 """Meme generation."""
 
 from pathlib import Path
-from typing import Optional
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -83,7 +82,7 @@ def create_meme(
     input_path: Path,
     output_path: Path,
     language: str = "English",
-    theme: Optional[str] = None,
+    theme: str = "-",
 ) -> None:
     """
     Generate funny text for a meme and place it on an image.
@@ -92,7 +91,7 @@ def create_meme(
         input_path: path to input image file
         output_path: path to output image file
         language: language to generate meme text in
-        theme: theme of the meme
+        theme: meme theme ('-' for no theme)
     """
     image_description = describe_image(input_path)
 
@@ -101,7 +100,9 @@ def create_meme(
         {
             "role": "user",
             "content": USER_PROMPT.format(
-                image_description, language, f"Theme: {theme}" if theme else ""
+                image_description,
+                language,
+                f"Theme: {theme}" if theme != "-" else "",
             ),
         },
     ]
