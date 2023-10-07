@@ -4,7 +4,7 @@ import asyncio
 from pathlib import Path
 from uuid import uuid4
 
-from aiogram import Bot, Dispatcher
+from aiogram import Bot, Dispatcher, F
 from aiogram.filters import Command, CommandStart
 from aiogram.filters.state import State, StatesGroup
 from aiogram.fsm.storage.memory import MemoryStorage
@@ -19,7 +19,7 @@ from app.meme import create_meme
 logger.add("logs.log", rotation="500 MB")
 
 (IMAGES_PATH := Path("images")).mkdir(exist_ok=True)
-(MEMES_PATH := Path("images")).mkdir(exist_ok=True)
+(MEMES_PATH := Path("memes")).mkdir(exist_ok=True)
 
 ERROR_IMAGE = "goose.jpeg"
 
@@ -97,7 +97,7 @@ async def process_theme(message: Message, state: FSMContext) -> None:
     await state.update_data(theme=message.text)
 
 
-@dp.message(content_types=["photo"])
+@dp.message(F.photo)
 async def image_handler(message: Message, state: FSMContext) -> None:
     """
     Handle received image – generate a meme with the image and send it to user.
@@ -106,9 +106,10 @@ async def image_handler(message: Message, state: FSMContext) -> None:
         message: received message
         state: current state
     """
-    filename = f"{uuid4()}.png"
+    filename = f"{uuid4()}.jpg"
     input_path, output_path = IMAGES_PATH / filename, MEMES_PATH / filename
-    await message.photo[-1].download(input_path)  # type: ignore
+    file = await bot.get_file(message.photo[-1].file_id)  # type: ignore
+    await bot.download_file(file.file_path, input_path)  # type: ignore
     await state.set_state(Form.language)
     await message.reply(messages.LANGUAGE_MSG)
     data = await state.get_data()
