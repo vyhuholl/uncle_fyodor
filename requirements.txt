@@ -1,0 +1,8 @@
+aiogram
+emoji
+loguru
+openai
+Pillow
+python-dotenv
+requests
+tenacity
