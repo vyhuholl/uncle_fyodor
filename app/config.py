@@ -9,4 +9,4 @@ load_dotenv()
 BOT_TOKEN = os.environ["BOT_TOKEN"]
 
 OPENAI_API_KEY = os.environ["OPENAI_API_KEY"]
-HUGGINGFACE_API_KEY = os.environ["OPENAI_API_KEY"]
+HUGGINGFACE_API_KEY = os.environ["HUGGINGFACE_API_KEY"]
