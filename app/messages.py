@@ -1,28 +1,18 @@
 """Bot messages."""
 
 START_MSG = """Send me a pic and I will make a meme with it!
+Also, you can write meme theme as a pic caption.
+To change meme language, use the /set_language command.
+For example: /set_language russian
 
-Пришли мне картинку и я сделаю из неё мем!"""
+Пришли мне картинку и я сделаю из неё мем!
+Также можно в подписи к картинке указать, о чём он должен быть.
+Изменить язык мемов можно командой /set_language.
+Например: /set_language русский"""
 
-LANGUAGE_MSG = """What language should I make a meme in?
-(To cancel meme generation, use the /cancel command.)
+LANGUAGE_MSG = """Success! New language: {}
 
-Введите язык мема.
-(Команда /cancel отменяет создание мема.)"""
-
-THEME_MSG = """What it should be about?
-(You can leave this field empty if you want – in that case, write "-".
-To cancel meme creation, use the /cancel command.)
-
-О чём должен быть мем?
-(Это поле можно оставить пустым – в таком случае, введите "-".
-Команда /cancel отменяет создание мема.)"""
-
-CANCEL_MSG = """Meme creation cancelled.
-You can send me new pic to generate new meme!
-
-Создание мема отменено.
-Ты можешь отправить мне другую картинку, чтобы я сделал из неё мем!"""
+Готово! Новый язык: {}"""
 
 ERROR_MSG = """Sorry, something bad happened. 🙁 Try again!
 

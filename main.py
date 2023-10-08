@@ -5,7 +5,7 @@ from pathlib import Path
 from uuid import uuid4
 
 from aiogram import Bot, Dispatcher, F
-from aiogram.filters import Command, CommandStart
+from aiogram.filters import Command, CommandObject, CommandStart
 from aiogram.filters.state import State, StatesGroup
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.fsm.context import FSMContext
@@ -52,69 +52,24 @@ async def command_start_handler(message: Message) -> None:
     await message.answer(messages.START_MSG)
 
 
-@dp.message(Command("cancel"))
-async def command_cancel_handler(message: Message, state: FSMContext) -> None:
+@dp.message(Command("set_language"))
+async def set_language(
+    message: Message, command: CommandObject, state: FSMContext
+) -> None:
     """
-    Allow user to cancel action via the /cancel command.
+    Handle /set_language command – set meme language.
 
     Args:
         message: received message
+        command: received command object
         state: current state
     """
-    current_state = await state.get_state()
-
-    if current_state is None:
-        return
-
-    logger.info(f"Cancelling state {current_state}...")
+    await state.update_data(language=command.args)
     data = await state.get_data()
 
-    if "filename" in data:
-        (IMAGES_PATH / data["filename"]).unlink(missing_ok=True)
-
-    await state.clear()
-    await message.reply(messages.CANCEL_MSG)
-
-
-@dp.message(Form.language)
-async def process_language(message: Message, state: FSMContext) -> None:
-    """
-    Set language to generate meme in. Ask user for meme theme.
-
-    Args:
-        message: received message
-        state: current state
-    """
-    await state.update_data(language=message.text)
-    await state.set_state(Form.theme)
-    await message.reply(messages.THEME_MSG)
-
-
-@dp.message(Form.theme)
-async def process_theme(message: Message, state: FSMContext) -> None:
-    """
-    Set meme theme. Generate meme text,
-
-    Args:
-        message: received message
-        state: current state
-    """
-    await state.update_data(theme=message.text)
-    data = await state.get_data()
-
-    try:
-        create_meme(data["filename"], data["language"], data["theme"])
-    except Exception as exc:
-        logger.error(f"{exc} happened during meme creation.")
-        await message.answer(messages.ERROR_MSG)
-        photo = BufferedInputFile.from_file(ERROR_IMAGE)
-        await bot.send_photo(message.chat.id, photo)
-    else:
-        photo = BufferedInputFile.from_file(MEMES_PATH / data["filename"])
-        await bot.send_photo(message.chat.id, photo)
-    finally:
-        (IMAGES_PATH / data["filename"]).unlink(missing_ok=True)
-        await state.clear()
+    await message.answer(
+        messages.LANGUAGE_MSG.format(data["language"], data["language"])
+    )
 
 
 @dp.message(F.photo)
@@ -131,8 +86,26 @@ async def image_handler(message: Message, state: FSMContext) -> None:
     await state.update_data(filename=filename)
     file = await bot.get_file(message.photo[-1].file_id)  # type: ignore
     await bot.download_file(file.file_path, input_path)  # type: ignore
-    await state.set_state(Form.language)
-    await message.reply(messages.LANGUAGE_MSG)
+
+    if message.caption:
+        await state.update_data(theme=message.caption)
+    else:
+        await state.update_data(theme=None)
+
+    data = await state.get_data()
+
+    try:
+        create_meme(**data)
+    except Exception as exc:
+        logger.error(f"{exc} happened during meme creation.")
+        await message.answer(messages.ERROR_MSG)
+        photo = BufferedInputFile.from_file(ERROR_IMAGE)
+        await bot.send_photo(message.chat.id, photo)
+    else:
+        photo = BufferedInputFile.from_file(MEMES_PATH / data["filename"])
+        await bot.send_photo(message.chat.id, photo)
+    finally:
+        (IMAGES_PATH / data["filename"]).unlink(missing_ok=True)
 
 
 async def main() -> None:

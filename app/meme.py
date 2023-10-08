@@ -101,17 +101,17 @@ def add_text(
         FONT_FILE, ceil(width / len(lower_text) * 1.5)
     )
 
-    outline_text(draw, upper_font, upper_text, width // 2, height // 10)
+    outline_text(draw, upper_font, upper_text, width // 2, height // 10, "mt")
 
     outline_text(
-        draw, lower_font, lower_text, width // 2, height - height // 10
+        draw, lower_font, lower_text, width // 2, height - height // 10, "ms"
     )
 
     image.save(output_path)
 
 
 def create_meme(
-    filename: str, language: str = "English", theme: str = "-"
+    filename: str, language: str = "English", theme: Optional[str] = None
 ) -> None:
     """
     Generate funny text for a meme and place it on an image.
@@ -119,14 +119,10 @@ def create_meme(
     Args:
         filename: image file name
         language: language to generate meme text in
-        theme: meme theme ('-' for no theme)
+        theme: meme theme
     """
     input_path, output_path = IMAGES_PATH / filename, MEMES_PATH / filename
     image_description = describe_image(input_path)
-
-    text = generate_text(
-        image_description, language, theme if theme != "-" else None
-    )
-
+    text = generate_text(image_description, language, theme)
     upper_text, lower_text = break_text(text)
     add_text(input_path, output_path, upper_text, lower_text)

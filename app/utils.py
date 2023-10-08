@@ -1,4 +1,4 @@
-# pylint: disable=invalid-name
+# pylint: disable=invalid-name, too-many-arguments
 """Various utility functions."""
 
 import re
@@ -98,7 +98,7 @@ def post_request_with_backoff(url: str, **kwargs: Any) -> Response:
 
 
 def outline_text(
-    draw: ImageDraw, font: FreeTypeFont, text: str, x: int, y: int
+    draw: ImageDraw, font: FreeTypeFont, text: str, x: int, y: int, anchor: str
 ) -> None:
     """
     Write white text with a black outline on an image.
@@ -109,15 +109,16 @@ def outline_text(
         text: text to write
         x: x text coordinate
         y: y text coordinate
+        anchor: text anchor
     """
-    draw.text((x - 1, y), text, fill="black", font=font, anchor="ms")
-    draw.text((x + 1, y), text, fill="black", font=font, anchor="ms")
-    draw.text((x, y - 1), text, fill="black", font=font, anchor="ms")
-    draw.text((x, y + 1), text, fill="black", font=font, anchor="ms")
+    draw.text((x - 1, y), text, fill="black", font=font, anchor=anchor)
+    draw.text((x + 1, y), text, fill="black", font=font, anchor=anchor)
+    draw.text((x, y - 1), text, fill="black", font=font, anchor=anchor)
+    draw.text((x, y + 1), text, fill="black", font=font, anchor=anchor)
 
-    draw.text((x - 1, y - 1), text, fill="black", font=font, anchor="ms")
-    draw.text((x + 1, y - 1), text, fill="black", font=font, anchor="ms")
-    draw.text((x - 1, y - 1), text, fill="black", font=font, anchor="ms")
-    draw.text((x + 1, y + 1), text, fill="black", font=font, anchor="ms")
+    draw.text((x - 1, y - 1), text, fill="black", font=font, anchor=anchor)
+    draw.text((x + 1, y - 1), text, fill="black", font=font, anchor=anchor)
+    draw.text((x - 1, y - 1), text, fill="black", font=font, anchor=anchor)
+    draw.text((x + 1, y + 1), text, fill="black", font=font, anchor=anchor)
 
-    draw.text((x, y), text, fill="white", font=font, anchor="ms")
+    draw.text((x, y), text, fill="white", font=font, anchor=anchor)
