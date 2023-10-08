@@ -67,6 +67,11 @@ async def command_cancel_handler(message: Message, state: FSMContext) -> None:
         return
 
     logger.info(f"Cancelling state {current_state}...")
+    data = await state.get_data()
+
+    if "filename" in data:
+        (IMAGES_PATH / data["filename"]).unlink(missing_ok=True)
+
     await state.clear()
     await message.reply(messages.CANCEL_MSG)
 

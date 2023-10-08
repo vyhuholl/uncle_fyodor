@@ -12,6 +12,7 @@ from app.utils import (
     break_text,
     clean_text,
     completion_with_backoff,
+    outline_text,
     post_request_with_backoff,
 )
 
@@ -100,20 +101,10 @@ def add_text(
         FONT_FILE, ceil(width / len(lower_text) * 1.5)
     )
 
-    draw.text(
-        (width // 2, height // 10),
-        upper_text,
-        fill="white",
-        font=upper_font,
-        anchor="ms",
-    )
+    outline_text(draw, upper_font, upper_text, width // 2, height // 10)
 
-    draw.text(
-        (width // 2, height - height // 10),
-        lower_text,
-        fill="white",
-        font=lower_font,
-        anchor="ms",
+    outline_text(
+        draw, lower_font, lower_text, width // 2, height - height // 10
     )
 
     image.save(output_path)
