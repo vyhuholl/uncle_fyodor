@@ -22,7 +22,7 @@ def break_text(text: str) -> Tuple[str, str]:
     """
     words = text.split()
     break_index = len(words) // 2
-    return " ".join(words[:break_index]), " ".join(words[:break_index])
+    return " ".join(words[:break_index]), " ".join(words[break_index:])
 
 
 def clean_text(text: str) -> str:

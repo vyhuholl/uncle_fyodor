@@ -1,2 +1,2 @@
-# dyadya_fyodor
+# Uncle Fyodor
 Meme generating bot.

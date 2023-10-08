@@ -1,6 +1,8 @@
 """Meme generation."""
 
+from math import ceil
 from pathlib import Path
+from typing import Optional
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -12,6 +14,9 @@ from app.utils import (
     completion_with_backoff,
     post_request_with_backoff,
 )
+
+(IMAGES_PATH := Path("images")).mkdir(exist_ok=True)
+(MEMES_PATH := Path("memes")).mkdir(exist_ok=True)
 
 HUGGINGFACE_API_URL = "https://api-inference.huggingface.co/models/nlpconnect/vit-gpt2-image-captioning"  # pylint: disable=line-too-long
 
@@ -38,7 +43,37 @@ def describe_image(filename: Path) -> str:
         timeout=1200,
     )
 
-    return response.json()[0]["generated_text"]
+    return response.json()[0]["generated_text"].strip()
+
+
+def generate_text(
+    image_description: str, language: str, theme: Optional[str] = None
+) -> str:
+    """
+    Create meme text for image via request to ChatGPT.
+
+    Args:
+        image_description: image description
+        language: language to generate meme text in
+        theme: meme theme
+    """
+    messages = [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {
+            "role": "user",
+            "content": USER_PROMPT.format(
+                image_description,
+                language,
+                f"Theme: {theme}" if theme else "",
+            ),
+        },
+    ]
+
+    response = completion_with_backoff(
+        model="gpt-3.5-turbo", messages=messages
+    )
+
+    return clean_text(response["choices"][0]["message"]["content"])
 
 
 def add_text(
@@ -56,8 +91,14 @@ def add_text(
     image = Image.open(input_path)
     draw = ImageDraw.Draw(image)
     width, height = image.size[:2]
-    upper_font = ImageFont.truetype(FONT_FILE, width // len(upper_text))
-    lower_font = ImageFont.truetype(FONT_FILE, width // len(lower_text))
+
+    upper_font = ImageFont.truetype(
+        FONT_FILE, ceil(width / len(upper_text) * 1.5)
+    )
+
+    lower_font = ImageFont.truetype(
+        FONT_FILE, ceil(width / len(lower_text) * 1.5)
+    )
 
     draw.text(
         (width // 2, height // 10),
@@ -79,38 +120,22 @@ def add_text(
 
 
 def create_meme(
-    input_path: Path,
-    output_path: Path,
-    language: str = "English",
-    theme: str = "-",
+    filename: str, language: str = "English", theme: str = "-"
 ) -> None:
     """
     Generate funny text for a meme and place it on an image.
 
     Args:
-        input_path: path to input image file
-        output_path: path to output image file
+        filename: image file name
         language: language to generate meme text in
         theme: meme theme ('-' for no theme)
     """
+    input_path, output_path = IMAGES_PATH / filename, MEMES_PATH / filename
     image_description = describe_image(input_path)
 
-    messages = [
-        {"role": "system", "content": SYSTEM_PROMPT},
-        {
-            "role": "user",
-            "content": USER_PROMPT.format(
-                image_description,
-                language,
-                f"Theme: {theme}" if theme != "-" else "",
-            ),
-        },
-    ]
-
-    response = completion_with_backoff(
-        model="gpt-3.5-turbo", messages=messages
+    text = generate_text(
+        image_description, language, theme if theme != "-" else None
     )
 
-    text = clean_text(response["choices"][0]["message"]["content"])
     upper_text, lower_text = break_text(text)
     add_text(input_path, output_path, upper_text, lower_text)

@@ -10,18 +10,16 @@ from aiogram.filters.state import State, StatesGroup
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
+from aiogram.types.input_file import BufferedInputFile
 from loguru import logger
 
 from app import config
 from app import messages
-from app.meme import create_meme
+from app.meme import create_meme, IMAGES_PATH, MEMES_PATH
 
 logger.add("logs.log", rotation="500 MB")
 
-(IMAGES_PATH := Path("images")).mkdir(exist_ok=True)
-(MEMES_PATH := Path("memes")).mkdir(exist_ok=True)
-
-ERROR_IMAGE = "goose.jpeg"
+ERROR_IMAGE = Path("goose.jpeg")
 
 bot = Bot(config.BOT_TOKEN)
 storage = MemoryStorage()
@@ -33,10 +31,12 @@ class Form(StatesGroup):
     States for meme generation.
 
     Attributes:
+        filename: input and output file name
         language: language to make a meme in
         theme: theme of the meme
     """
 
+    filename = State()
     language = State()
     theme = State()
 
@@ -77,7 +77,7 @@ async def process_language(message: Message, state: FSMContext) -> None:
     Set language to generate meme in. Ask user for meme theme.
 
     Args:
-        message: received message with language name
+        message: received message
         state: current state
     """
     await state.update_data(language=message.text)
@@ -88,13 +88,28 @@ async def process_language(message: Message, state: FSMContext) -> None:
 @dp.message(Form.theme)
 async def process_theme(message: Message, state: FSMContext) -> None:
     """
-    Set theme of the meme.
+    Set meme theme. Generate meme text,
 
     Args:
-        message: received message with meme theme
+        message: received message
         state: current state
     """
     await state.update_data(theme=message.text)
+    data = await state.get_data()
+
+    try:
+        create_meme(data["filename"], data["language"], data["theme"])
+    except Exception as exc:
+        logger.error(f"{exc} happened during meme creation.")
+        await message.answer(messages.ERROR_MSG)
+        photo = BufferedInputFile.from_file(ERROR_IMAGE)
+        await bot.send_photo(message.chat.id, photo)
+    else:
+        photo = BufferedInputFile.from_file(MEMES_PATH / data["filename"])
+        await bot.send_photo(message.chat.id, photo)
+    finally:
+        (IMAGES_PATH / data["filename"]).unlink(missing_ok=True)
+        await state.clear()
 
 
 @dp.message(F.photo)
@@ -107,53 +122,17 @@ async def image_handler(message: Message, state: FSMContext) -> None:
         state: current state
     """
     filename = f"{uuid4()}.jpg"
-    input_path, output_path = IMAGES_PATH / filename, MEMES_PATH / filename
+    input_path = IMAGES_PATH / filename
+    await state.update_data(filename=filename)
     file = await bot.get_file(message.photo[-1].file_id)  # type: ignore
     await bot.download_file(file.file_path, input_path)  # type: ignore
     await state.set_state(Form.language)
     await message.reply(messages.LANGUAGE_MSG)
-    data = await state.get_data()
-
-    if "language" in data and "theme" in data:
-        try:
-            create_meme(
-                input_path, output_path, data["language"], data["theme"]
-            )
-        except Exception as exc:
-            logger.error(f"{exc} happened during meme creation.")
-            await message.answer(messages.ERROR_MSG)
-            await bot.send_photo(message.chat.id, ERROR_IMAGE)
-        else:
-            await bot.send_photo(message.chat.id, str(output_path))
-        finally:
-            input_path.unlink(missing_ok=True)
-            await state.clear()
-
-
-# pylint: disable=unused-argument
-async def on_startup(dispatcher: Dispatcher) -> None:
-    """
-    Log bot starting message.
-
-    Args:
-        dispatcher: aiogram dispatcher
-    """
-    logger.info("Bot started")
-
-
-async def on_shutdown(dispatcher: Dispatcher) -> None:
-    """
-    Log bot stopping message.
-
-    Args:
-        dispatcher: aiogram dispatcher
-    """
-    logger.info("Bot stopped")
 
 
 async def main() -> None:
     """Run bot."""
-    await dp.start_polling(bot, on_startup=on_startup, on_shutdown=on_shutdown)
+    await dp.start_polling(bot)
 
 
 if __name__ == "__main__":
